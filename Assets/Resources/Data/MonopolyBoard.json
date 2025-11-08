@@ -1,0 +1,115 @@
+[
+  {
+    "name": "Startas",
+    "type": "start"
+  },
+  {
+    "name": "Vilniaus gatvė",
+    "type": "street",
+    "price": 60,
+    "rent": 10
+  },
+  {
+    "name": "Kauno gatvė",
+    "type": "street",
+    "price": 60,
+    "rent": 10
+  },
+  {
+    "name": "Mokesčiai",
+    "type": "tax",
+    "amount": 200
+  },
+  {
+    "name": "Geležinkelio stotis",
+    "type": "station",
+    "price": 200,
+    "rent": 25
+  },
+
+  {
+    "name": "Klaipėdos gatvė",
+    "type": "street",
+    "price": 100,
+    "rent": 20
+  },
+  {
+    "name": "Šiaulių gatvė",
+    "type": "street",
+    "price": 100,
+    "rent": 20
+  },
+  {
+    "name": "Trakų vandentiekis",
+    "type": "utility",
+    "price": 150,
+    "rent": 40
+  },
+  {
+    "name": "Kalėjimas",
+    "type": "jail"
+  },
+  {
+    "name": "Nidos gatvė",
+    "type": "street",
+    "price": 140,
+    "rent": 30
+  },
+
+  {
+    "name": "Palangos gatvė",
+    "type": "street",
+    "price": 140,
+    "rent": 30
+  },
+  {
+    "name": "Loterija",
+    "type": "bonus",
+    "amount": 100
+  },
+  {
+    "name": "Kauno stotis",
+    "type": "station",
+    "price": 200,
+    "rent": 25
+  },
+  {
+    "name": "Birštono gatvė",
+    "type": "street",
+    "price": 180,
+    "rent": 40
+  },
+  {
+    "name": "Nemokamas poilsis",
+    "type": "free_parking"
+  },
+
+  {
+    "name": "Utenos gatvė",
+    "type": "street",
+    "price": 220,
+    "rent": 50
+  },
+  {
+    "name": "Elektrėnų elektrinė",
+    "type": "utility",
+    "price": 150,
+    "rent": 40
+  },
+  {
+    "name": "Eini į kalėjimą",
+    "type": "goto_jail"
+  },
+  {
+    "name": "Tauragės gatvė",
+    "type": "street",
+    "price": 300,
+    "rent": 70
+  },
+  {
+    "name": "Vilniaus centras",
+    "type": "street",
+    "price": 350,
+    "rent": 90
+  }
+]
