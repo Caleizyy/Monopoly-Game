@@ -17,6 +17,7 @@ namespace CoreNamespace
         // Žaidimo būsena
         private bool gameStarted = false;
         private Player currentPlayer;
+        private bool hasRolled = false; // Ar šiame ėjime jau metė kauliuką
 
         // Žaidimo taisyklės
         [Header("Žaidimo taisyklės")]
@@ -39,11 +40,14 @@ namespace CoreNamespace
 
             Debug.Log("=== MONOPOLIS ===");
             Debug.Log("Spauskite [N] pradėti naują žaidimą");
-            Debug.Log("Spauskite [SPACE] mesti kauliuką");
-            Debug.Log("Spauskite [B] pirkti laukelį");
-            Debug.Log("Spauskite [H] pirkti pastatą");
-            Debug.Log("Spauskite [Q] nutraukti žaidimą");
-            Debug.Log("Spauskite [P] atspausdinti lentą");
+            Debug.Log("\n📖 ŽAIDIMO TAISYKLĖS:");
+            Debug.Log("  [SPACE] - Mesti kauliuką ir judėti");
+            Debug.Log("  [B] - Pirkti laukelį (PO judėjimo, jei nori)");
+            Debug.Log("  [H] - Pirkti pastatą (PO judėjimo, ant savo gatvės)");
+            Debug.Log("  [D] - Nugriauti pastatą ir atgauti 50% pinigų");
+            Debug.Log("  [SPACE] - Mesti kitą kauliuką (automatiškai kitas žaidėjas)");
+            Debug.Log("\n  [P] - Atspausdinti lentą");
+            Debug.Log("  [Q] - Nutraukti žaidimą");
         }
 
         void Update()
@@ -73,6 +77,11 @@ namespace CoreNamespace
                 BuyBuilding();
             }
 
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                DemolishBuilding();
+            }
+
             if (Input.GetKeyDown(KeyCode.Q))
             {
                 QuitGame();
@@ -100,18 +109,28 @@ namespace CoreNamespace
                 PlayerQueue.Enqueue(p);
             }
 
-            currentPlayer = PlayerQueue.Peek();
+            currentPlayer = PlayerQueue.Dequeue();
+            hasRolled = false;
             gameStarted = true;
 
-            Debug.Log($"🎮 ŽAIDIMAS PRASIDĖJO!");
+            Debug.Log($"\n🎮 ŽAIDIMAS PRASIDĖJO!");
             Debug.Log($"Žaidėjų skaičius: {playerCount}");
             Debug.Log($"Pergalei reikia: {winningMoney}€");
             PrintGameStatus();
+            Debug.Log("\n💡 Spausk [SPACE] mesti kauliuką!");
         }
 
         // Mesti kauliuką
         void RollDice()
         {
+            // Jei jau metė kauliuką - baigia ejima
+            if (hasRolled)
+            {
+                Debug.Log($"⏭️  {currentPlayer.Name} baigia ėjimą. Kitas žaidėjas...\n");
+                NextTurn();
+                return;
+            }
+
             if (currentPlayer.IsInJail)
             {
                 currentPlayer.JailTurns--;
@@ -130,7 +149,8 @@ namespace CoreNamespace
 
             // Metame kauliuką (1-6)
             lastDiceRoll = Random.Range(1, 7);
-            Debug.Log($"🎲 {currentPlayer.Name} išmetė: {lastDiceRoll}");
+            Debug.Log($"\n🎲 {currentPlayer.Name} išmetė: {lastDiceRoll}");
+            hasRolled = true;
 
             // Judame
             currentPlayer.Move(lastDiceRoll);
@@ -139,11 +159,20 @@ namespace CoreNamespace
             CheckWinCondition();
 
             PrintGameStatus();
+
+            // Leidžiame pirkti/statyti/griauti, arba baigti ejima jei nenori
+            Debug.Log("\n💡 Gali pirkti [B], statyti [H], griauti [D], arba spausk [SPACE] baigti ėjimą");
         }
 
         // Pirkti laukelį
         void BuyCurrentProperty()
         {
+            if (!hasRolled)
+            {
+                Debug.Log("⚠️ Pirma reikia mesti kauliuką [SPACE] ir atsistoti ant laukelio!");
+                return;
+            }
+
             if (currentPlayer.Position is StreetTile street)
             {
                 currentPlayer.BuyProperty(street);
@@ -158,6 +187,14 @@ namespace CoreNamespace
                     Debug.Log($"✅ {currentPlayer.Name} nusipirko {station.Name}");
                     PrintGameStatus();
                 }
+                else if (station.Owner != null)
+                {
+                    Debug.Log($"❌ {station.Name} jau turi savininką!");
+                }
+                else
+                {
+                    Debug.Log($"❌ Neužtenka pinigų!");
+                }
             }
             else if (currentPlayer.Position is UtilityTile utility)
             {
@@ -167,6 +204,14 @@ namespace CoreNamespace
                     utility.Owner = currentPlayer;
                     Debug.Log($"✅ {currentPlayer.Name} nusipirko {utility.Name}");
                     PrintGameStatus();
+                }
+                else if (utility.Owner != null)
+                {
+                    Debug.Log($"❌ {utility.Name} jau turi savininką!");
+                }
+                else
+                {
+                    Debug.Log($"❌ Neužtenka pinigų!");
                 }
             }
             else
@@ -178,6 +223,12 @@ namespace CoreNamespace
         // Pirkti pastatą
         void BuyBuilding()
         {
+            if (!hasRolled)
+            {
+                Debug.Log("⚠️ Pirma reikia mesti kauliuką [SPACE] ir atsistoti ant laukelio!");
+                return;
+            }
+
             if (currentPlayer.Position is StreetTile street)
             {
                 int buildingCost = street.Price / 2; // Pastato kaina = pusė laukelio kainos
@@ -190,17 +241,58 @@ namespace CoreNamespace
             }
         }
 
+        void DemolishBuilding()
+        {
+            if (!hasRolled)
+            {
+                Debug.Log("⚠️ Pirma reikia mesti kauliuką [SPACE] ir atsistoti ant laukelio!");
+                return;
+            }
+
+            if (currentPlayer.Position is StreetTile street)
+            {
+                if (street.Owner != currentPlayer)
+                {
+                    Debug.Log($"❌ {currentPlayer.Name} nevaldo {street.Name}!");
+                    return;
+                }
+
+                if (street.Buildings.Count == 0)
+                {
+                    Debug.Log($"❌ {street.Name} neturi pastatų!");
+                    return;
+                }
+
+                // Nugriauti viršutinį pastatą
+                int buildingRent = street.Buildings.Pop();
+                int refund = (street.Price / 2) / 2; // Grąžina 50% pastato kainos
+                currentPlayer.Money += refund;
+
+                Debug.Log($"🔨 {currentPlayer.Name} nugriovė pastatą ant {street.Name}");
+                Debug.Log($"💰 Grąžinta: {refund}€ (50% pastato kainos)");
+                Debug.Log($"📊 Liko pastatų: {street.Buildings.Count}");
+
+                PrintGameStatus();
+            }
+            else
+            {
+                Debug.Log("❌ Ant šio laukelio nėra pastatų!");
+            }
+        }
+
         // Kitas ėjimas
         void NextTurn()
         {
-            // Grąžiname dabartinį žaidėją į eilę
+            // Grąžina dabartinį žaidėją į eilę
             PlayerQueue.Enqueue(currentPlayer);
 
-            // Imame kitą žaidėją
+            // Ima kitą žaidėją
             currentPlayer = PlayerQueue.Dequeue();
+            hasRolled = false; // Naujas ėjimas - gali mesti kauliuką
 
             Debug.Log($"--- {currentPlayer.Name} ĖJIMAS ---");
             PrintGameStatus();
+            Debug.Log("💡 Spausk [SPACE] mesti kauliuką");
         }
 
         // Nutraukti žaidimą
@@ -216,9 +308,10 @@ namespace CoreNamespace
         {
             if (currentPlayer.Money >= winningMoney)
             {
-                Debug.Log($"🏆🏆🏆 {currentPlayer.Name} LAIMĖJO! 🏆🏆🏆");
+                Debug.Log($"\n🏆🏆🏆 {currentPlayer.Name} LAIMĖJO! 🏆🏆🏆");
                 Debug.Log($"Galutinė suma: {currentPlayer.Money}€");
                 gameStarted = false;
+                return;
             }
 
             // Patikrinti ar žaidėjas pralaimėjo
@@ -229,12 +322,15 @@ namespace CoreNamespace
 
                 if (PlayersList.Count == 1)
                 {
-                    Debug.Log($"🏆 {PlayersList[0].Name} LAIMĖJO (vienintelis likęs)!");
+                    Debug.Log($"\n🏆 {PlayersList[0].Name} LAIMĖJO (vienintelis likęs)!");
                     gameStarted = false;
                 }
                 else
                 {
-                    NextTurn();
+                    currentPlayer = PlayerQueue.Dequeue();
+                    hasRolled = false;
+                    Debug.Log($"\n--- {currentPlayer.Name} ĖJIMAS ---");
+                    PrintGameStatus();
                 }
             }
         }

@@ -20,7 +20,7 @@ namespace BoardNamespace
         }
     }
 
-    // 1️⃣ GATVĖ - galima pirkti, turi savininką
+    // GATVĖ - galima pirkti, turi savininką
     public class StreetTile : Tile
     {
         public int Price;
@@ -41,8 +41,9 @@ namespace BoardNamespace
         {
             if (Owner == null)
             {
-                // Laukelis be savininko - gali pirkti
-                Debug.Log($"{player.Name} gali nusipirkti {Name} už {Price}€");
+                // Laukelis be savininko
+                Debug.Log($"💰 {player.Name} gali nusipirkti {Name} už {Price}€");
+                Debug.Log($"   💡 Spausk [B] jei nori pirkti, arba [SPACE] tęsti be pirkimo");
             }
             else if (Owner != player)
             {
@@ -50,12 +51,13 @@ namespace BoardNamespace
                 int rent = CalculateRent();
                 player.Money -= rent;
                 Owner.Money += rent;
-                Debug.Log($"{player.Name} sumoka {rent}€ nuomos {Owner.Name}");
+                Debug.Log($"💸 {player.Name} sumoka {rent}€ nuomos {Owner.Name}");
             }
             else
             {
                 // Tai žaidėjo nuosavybė - gali statyti
-                Debug.Log($"{player.Name} atsistojo ant savo laukelio {Name}");
+                Debug.Log($"🏠 {player.Name} atsistojo ant savo laukelio {Name}");
+                Debug.Log($"   💡 Spausk [H] pastatui, [D] nugriauti, arba [SPACE] tęsti");
             }
         }
 
@@ -63,10 +65,9 @@ namespace BoardNamespace
         {
             int rent = BaseRent;
             // Kiekvienas pastatas didina nuomą
-            int buildingCount = Buildings.Count;
-            for (int i = 0; i < buildingCount; i++)
+            foreach (int buildingRent in Buildings)
             {
-                rent += Buildings.ToArray()[i];
+                rent += buildingRent;
             }
             return rent;
         }
@@ -75,11 +76,35 @@ namespace BoardNamespace
         {
             if (Buildings.Count >= 3)
             {
-                Debug.Log("Jau yra maksimalus pastatų skaičius (3)!");
+                Debug.Log("❌ Jau yra maksimalus pastatų skaičius (3)!");
                 return;
             }
             Buildings.Push(additionalRent);
-            Debug.Log($"Pastatytas naujas pastatas! Papildoma nuoma: {additionalRent}€");
+            Debug.Log($"🏗️ Pastatytas naujas pastatas! Papildoma nuoma: {additionalRent}€");
+        }
+
+        // Parduoti pastatą (nugriauti)
+        public bool SellBuilding(PlayerNamespace.Player player)
+        {
+            if (Owner != player)
+            {
+                Debug.Log($"❌ {player.Name} nevaldo {Name}!");
+                return false;
+            }
+
+            if (Buildings.Count == 0)
+            {
+                Debug.Log($"❌ {Name} neturi pastatų!");
+                return false;
+            }
+
+            // Nuimame viršutinį pastatą iš steko
+            int rentValue = Buildings.Pop();
+            int refund = rentValue * 2; // Gražiname dvigubai (nes kaina buvo Price/2, o rent = kaina/4)
+            player.Money += refund;
+
+            Debug.Log($"🏚️ {player.Name} nugriavo pastatą ant {Name} ir gavo {refund}€ atgal!");
+            return true;
         }
 
         public override string GetInfo()
@@ -93,7 +118,7 @@ namespace BoardNamespace
         }
     }
 
-    // 2️⃣ STARTAS - gauni pinigų
+    // STARTAS - bonusas TIKTAI už praėjimą (ne už atsistojimą)
     public class StartTile : Tile
     {
         public int BonusMoney = 200;
@@ -106,12 +131,11 @@ namespace BoardNamespace
 
         public override void OnPlayerLand(PlayerNamespace.Player player)
         {
-            player.Money += BonusMoney;
-            Debug.Log($"{player.Name} perėjo startą ir gavo {BonusMoney}€!");
+            Debug.Log($"🏁 {player.Name} yra starte!");
         }
     }
 
-    // 3️⃣ KALĖJIMAS - praleidžia ėjimą
+    // KALĖJIMAS - tik lankosi (ne bausmė)
     public class JailTile : Tile
     {
         public JailTile(string name)
@@ -122,13 +146,12 @@ namespace BoardNamespace
 
         public override void OnPlayerLand(PlayerNamespace.Player player)
         {
-            player.IsInJail = true;
-            player.JailTurns = 1; // Praleidžia 1 ėjimą
-            Debug.Log($"{player.Name} pakliuvo į kalėjimą! Praleidžia ėjimą.");
+            // Tik lankosi, ne bausmė
+            Debug.Log($"👮 {player.Name} tik lanko kalėjimą (nėra baudžiamas)");
         }
     }
 
-    // 4️⃣ LOTERIJA/BONUS - visada gauni pinigų
+    // LOTERIJA/BONUS - visada gauni pinigų
     public class BonusTile : Tile
     {
         public int Amount;
@@ -143,11 +166,11 @@ namespace BoardNamespace
         public override void OnPlayerLand(PlayerNamespace.Player player)
         {
             player.Money += Amount;
-            Debug.Log($"{player.Name} laimėjo loteriją ir gavo {Amount}€!");
+            Debug.Log($"🎉 {player.Name} laimėjo loteriją ir gavo {Amount}€!");
         }
     }
 
-    // 5️⃣ MOKESČIAI - moki pinigus
+    // MOKESČIAI - moki pinigus
     public class TaxTile : Tile
     {
         public int Amount;
@@ -162,11 +185,11 @@ namespace BoardNamespace
         public override void OnPlayerLand(PlayerNamespace.Player player)
         {
             player.Money -= Amount;
-            Debug.Log($"{player.Name} sumokėjo {Amount}€ mokesčių.");
+            Debug.Log($"💰 {player.Name} sumokėjo {Amount}€ mokesčių.");
         }
     }
 
-    // 6️⃣ STOTIS - speciali nuosavybė
+    // STOTIS - speciali nuosavybė
     public class StationTile : Tile
     {
         public int Price;
@@ -185,13 +208,18 @@ namespace BoardNamespace
         {
             if (Owner == null)
             {
-                Debug.Log($"{player.Name} gali nusipirkti stotį {Name} už {Price}€");
+                Debug.Log($"🚂 {player.Name} gali nusipirkti stotį {Name} už {Price}€");
+                Debug.Log($"   💡 Spausk [B] jei nori pirkti, arba [SPACE] tęsti be pirkimo");
             }
             else if (Owner != player)
             {
                 player.Money -= BaseRent;
                 Owner.Money += BaseRent;
-                Debug.Log($"{player.Name} sumoka {BaseRent}€ nuomos {Owner.Name}");
+                Debug.Log($"💸 {player.Name} sumoka {BaseRent}€ nuomos {Owner.Name}");
+            }
+            else
+            {
+                Debug.Log($"🚂 {player.Name} yra savo stotyje {Name}");
             }
         }
 
@@ -204,7 +232,7 @@ namespace BoardNamespace
         }
     }
 
-    // 7️⃣ KOMUNALINĖS PASLAUGOS
+    // KOMUNALINĖS PASLAUGOS
     public class UtilityTile : Tile
     {
         public int Price;
@@ -223,13 +251,18 @@ namespace BoardNamespace
         {
             if (Owner == null)
             {
-                Debug.Log($"{player.Name} gali nusipirkti {Name} už {Price}€");
+                Debug.Log($"⚡ {player.Name} gali nusipirkti {Name} už {Price}€");
+                Debug.Log($"   💡 Spausk [B] jei nori pirkti, arba [SPACE] tęsti be pirkimo");
             }
             else if (Owner != player)
             {
                 player.Money -= BaseRent;
                 Owner.Money += BaseRent;
-                Debug.Log($"{player.Name} sumoka {BaseRent}€ nuomos {Owner.Name}");
+                Debug.Log($"💸 {player.Name} sumoka {BaseRent}€ nuomos {Owner.Name}");
+            }
+            else
+            {
+                Debug.Log($"⚡ {player.Name} yra savo komunalinėje paslaugoje {Name}");
             }
         }
 
@@ -242,7 +275,7 @@ namespace BoardNamespace
         }
     }
 
-    // 8️⃣ NEMOKAMAS POILSIS - nieko nevyksta
+    // NEMOKAMAS POILSIS - nieko nevyksta
     public class FreeParkingTile : Tile
     {
         public FreeParkingTile(string name)
@@ -253,11 +286,11 @@ namespace BoardNamespace
 
         public override void OnPlayerLand(PlayerNamespace.Player player)
         {
-            Debug.Log($"{player.Name} ilsisi nemokamame parkinge!");
+            Debug.Log($"🅿️ {player.Name} ilsisi nemokamame parkinge!");
         }
     }
 
-    // 9️⃣ EINI Į KALĖJIMĄ
+    // EINI Į KALĖJIMĄ
     public class GoToJailTile : Tile
     {
         public GoToJailTile(string name)
@@ -270,8 +303,21 @@ namespace BoardNamespace
         {
             player.IsInJail = true;
             player.JailTurns = 1;
-            Debug.Log($"{player.Name} eina į kalėjimą!");
-            // Reikės perkelti žaidėją į kalėjimo laukelį
+            Debug.Log($"🚔 {player.Name} eina į kalėjimą!");
+
+            Tile current = this.Next;
+            while (current != this)
+            {
+                if (current is JailTile)
+                {
+                    player.Position = current;
+                    Debug.Log($"🔒 {player.Name} perkeltas į kalėjimą!");
+                    return;
+                }
+                current = current.Next;
+            }
+
+            Debug.LogWarning("⚠️ Kalėjimo laukelis nerastas lentoje!");
         }
     }
 }

@@ -1,176 +1,189 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using BoardNamespace;
 
 namespace BoardNamespace
 {
-    // Ciklinė žaidimo lenta (ciklinis vienakryptis sąrašas)
+    // Žaidimo lenta - ciklinis vienakryptis sąrašas
     public class GameBoard
     {
-        private Tile head; // Pirmasis laukelis (startas)
+        private Tile head; // Sąrašo pradžia
         private int tileCount = 0;
 
-        // Pridėti laukelį į pabaigą
+        public GameBoard()
+        {
+            head = null;
+            tileCount = 0;
+        }
+
+        // Pridėti laukelį į sąrašo pabaigą
         public void AddTile(Tile tile)
         {
             if (head == null)
             {
                 // Pirmas laukelis
                 head = tile;
-                tile.Next = tile; // Rodo į save (ciklas)
+                tile.Next = head; // Ciklas - rodo į save
             }
             else
             {
-                // Randame paskutinį laukelį
+                // Randa paskutinį laukelį
                 Tile current = head;
                 while (current.Next != head)
                 {
                     current = current.Next;
                 }
 
-                // Prijungiame naują laukelį
+                // Prijungia naują laukelį
                 current.Next = tile;
-                tile.Next = head; // Uždarome ciklą
+                tile.Next = head; // Uždaro ciklą
             }
 
             tileCount++;
         }
 
-        // Pridėti laukelį į konkretią poziciją
+        // Įterpti laukelį į konkretų poziciją
         public void InsertTile(Tile tile, int position)
         {
-            if (position < 0 || position > tileCount)
+            if (position < 0)
             {
-                Debug.LogError("Neteisinga pozicija!");
+                Debug.LogError("Pozicija negali būti neigiama!");
                 return;
             }
 
-            if (position == 0)
+            if (position == 0 || head == null)
             {
-                // Įterpiame į pradžią
+                // Įterpia į pradžią
                 if (head == null)
                 {
                     head = tile;
-                    tile.Next = tile;
+                    tile.Next = head;
                 }
                 else
                 {
-                    // Randame paskutinį
-                    Tile last = GetTileAt(tileCount - 1);
+                    // Randa paskutinį
+                    Tile last = head;
+                    while (last.Next != head)
+                    {
+                        last = last.Next;
+                    }
+
                     tile.Next = head;
-                    last.Next = tile;
                     head = tile;
+                    last.Next = head; // Paskutinis rodo į naują head
                 }
-            }
-            else
-            {
-                // Įterpiame į vidurį/pabaigą
-                Tile previous = GetTileAt(position - 1);
-                tile.Next = previous.Next;
-                previous.Next = tile;
+                tileCount++;
+                Debug.Log($"✅ Laukelis {tile.Name} įterptas į poziciją {position}");
+                return;
             }
 
+            // Įterpia į vidurį/pabaigą
+            Tile current = head;
+            for (int i = 0; i < position - 1 && current.Next != head; i++)
+            {
+                current = current.Next;
+            }
+
+            tile.Next = current.Next;
+            current.Next = tile;
             tileCount++;
-            Debug.Log($"Laukelis '{tile.Name}' įterptas į poziciją {position}");
+
+            Debug.Log($"✅ Laukelis {tile.Name} įterptas į poziciją {position}");
         }
 
         // Ištrinti laukelį pagal poziciją
-        public bool RemoveTileAt(int position)
+        public void RemoveTileAt(int position)
         {
-            if (position < 0 || position >= tileCount || head == null)
+            if (head == null)
             {
-                Debug.LogError("Neteisinga pozicija arba lenta tuščia!");
-                return false;
+                Debug.LogError("Lenta tuščia!");
+                return;
             }
 
-            if (tileCount == 1)
+            if (position < 0 || position >= tileCount)
             {
-                // Vienintelis laukelis
-                Debug.Log($"Ištrintas laukelis: {head.Name}");
-                head = null;
-                tileCount = 0;
-                return true;
+                Debug.LogError($"Neteisinga pozicija: {position}");
+                return;
             }
 
+            // Trinti pirmą laukelį
             if (position == 0)
             {
-                // Triname pirmą
-                Tile last = GetTileAt(tileCount - 1);
-                Debug.Log($"Ištrintas laukelis: {head.Name}");
-                head = head.Next;
-                last.Next = head;
-            }
-            else
-            {
-                // Triname iš vidurio/pabaigos
-                Tile previous = GetTileAt(position - 1);
-                Tile toRemove = previous.Next;
-                Debug.Log($"Ištrintas laukelis: {toRemove.Name}");
-                previous.Next = toRemove.Next;
+                if (head.Next == head)
+                {
+                    // Vienintelis laukelis
+                    Debug.Log($"🗑️ Ištrintas laukelis: {head.Name}");
+                    head = null;
+                }
+                else
+                {
+                    // Randa paskutinį
+                    Tile last = head;
+                    while (last.Next != head)
+                    {
+                        last = last.Next;
+                    }
+
+                    Tile toRemove = head;
+                    head = head.Next;
+                    last.Next = head;
+                    Debug.Log($"🗑️ Ištrintas laukelis: {toRemove.Name}");
+                }
+                tileCount--;
+                return;
             }
 
+            // Trinti vidurinio/paskutinio laukelio
+            Tile current = head;
+            for (int i = 0; i < position - 1; i++)
+            {
+                current = current.Next;
+            }
+
+            Tile removed = current.Next;
+            current.Next = removed.Next;
             tileCount--;
-            return true;
+
+            Debug.Log($"🗑️ Ištrintas laukelis: {removed.Name}");
         }
 
-        // Ištrinti laukelį pagal pavadinimą
-        public int RemoveTileByName(string name)
+        // Ištrinti laukelį pagal pavadinimą (PIRMĄ ATITIKMENĮ)
+        public void RemoveTileByName(string name)
         {
-            if (head == null) return 0;
+            if (head == null)
+            {
+                Debug.LogError("Lenta tuščia!");
+                return;
+            }
 
-            int removedCount = 0;
+            // Tikrina pirmą laukelį
+            if (head.Name == name)
+            {
+                RemoveTileAt(0);
+                return;
+            }
+
+            // Ieško sąraše
+            Tile current = head;
+            Tile previous = null;
             int position = 0;
 
-            // Patikriname ar yra keletas laukelių su tuo pačiu pavadinimu
-            List<int> positionsToRemove = new List<int>();
-
-            Tile current = head;
             do
             {
                 if (current.Name == name)
                 {
-                    positionsToRemove.Add(position);
+                    RemoveTileAt(position);
+                    return;
                 }
+                previous = current;
                 current = current.Next;
                 position++;
-            } while (current != head && position < tileCount);
-
-            if (positionsToRemove.Count > 1)
-            {
-                Debug.LogWarning($"Rasti {positionsToRemove.Count} laukeliai vardu '{name}'!");
-                Debug.LogWarning("Trinamas tik pirmas rastas laukelis.");
             }
+            while (current != head);
 
-            // Triname tik pirmą rastą
-            if (positionsToRemove.Count > 0)
-            {
-                RemoveTileAt(positionsToRemove[0]);
-                removedCount = 1;
-            }
-            else
-            {
-                Debug.LogWarning($"Laukelis '{name}' nerastas!");
-            }
-
-            return removedCount;
+            Debug.LogWarning($"Laukelis '{name}' nerastas!");
         }
 
-        // Gauti laukelį pagal poziciją
-        public Tile GetTileAt(int position)
-        {
-            if (position < 0 || position >= tileCount || head == null)
-                return null;
-
-            Tile current = head;
-            for (int i = 0; i < position; i++)
-            {
-                current = current.Next;
-            }
-
-            return current;
-        }
-
-        // Gauti startą (pirmą laukelį)
+        // Gauti startinį laukelį
         public Tile GetStart()
         {
             return head;
@@ -182,12 +195,31 @@ namespace BoardNamespace
             return tileCount;
         }
 
-        // Spausdinti visą lentą
+        // Rasti kalėjimo laukelį (reikės GoToJail funkcijai)
+        public Tile FindJailTile()
+        {
+            if (head == null) return null;
+
+            Tile current = head;
+            do
+            {
+                if (current is JailTile)
+                {
+                    return current;
+                }
+                current = current.Next;
+            }
+            while (current != head);
+
+            return null;
+        }
+
+        // Atspausdinti lentą
         public void PrintBoard()
         {
             if (head == null)
             {
-                Debug.Log("Lenta tuščia!");
+                Debug.Log("❌ Lenta tuščia!");
                 return;
             }
 
@@ -200,37 +232,11 @@ namespace BoardNamespace
                 Debug.Log($"[{index}] {current.GetInfo()}");
                 current = current.Next;
                 index++;
-            } while (current != head && index < tileCount);
-        }
-
-        // Rasti konkretų laukelio tipą (pvz., kalėjimą)
-        public Tile FindTileByType(string type)
-        {
-            if (head == null) return null;
-
-            Tile current = head;
-            do
-            {
-                if (current.Type == type)
-                    return current;
-                current = current.Next;
-            } while (current != head);
-
-            return null;
-        }
-
-        // Iterator - judėjimas lenta
-        public Tile MoveFromTile(Tile startTile, int steps)
-        {
-            if (startTile == null || steps <= 0) return startTile;
-
-            Tile current = startTile;
-            for (int i = 0; i < steps; i++)
-            {
-                current = current.Next;
             }
+            while (current != head);
 
-            return current;
+            Debug.Log($"Iš viso laukelių: {tileCount}");
+            Debug.Log("====================");
         }
     }
 }

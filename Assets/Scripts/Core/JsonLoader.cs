@@ -30,7 +30,7 @@ public class JsonLoader : MonoBehaviour
 
     void LoadBoardFromJson()
     {
-        // 1️⃣ Nuskaityti JSON failą iš Resources/Data/MonopolyBoard.json
+        // Nuskaityti JSON failą iš Unity Projekto
         TextAsset json = Resources.Load<TextAsset>("Data/MonopolyBoard");
 
         if (json == null)
@@ -39,7 +39,7 @@ public class JsonLoader : MonoBehaviour
             return;
         }
 
-        // 2️⃣ Pridedame wrapper JSON masyvui
+        // Prideda wrapper JSON masyvui
         string jsonText = "{\"tiles\":" + json.text + "}";
         TileList tileList = JsonUtility.FromJson<TileList>(jsonText);
 
@@ -49,7 +49,7 @@ public class JsonLoader : MonoBehaviour
             return;
         }
 
-        // 3️⃣ Sukuriame laukelius pagal tipą
+        // Sukuria laukelius pagal tipą
         foreach (var data in tileList.tiles)
         {
             Tile tile = CreateTileFromData(data);
@@ -63,7 +63,7 @@ public class JsonLoader : MonoBehaviour
         Board.PrintBoard();
     }
 
-    // Sukuriame laukelį pagal tipą
+    // Sukuria laukelį pagal tipą
     Tile CreateTileFromData(TileData data)
     {
         Tile tile = null;
