@@ -3,42 +3,21 @@ using UnityEngine;
 
 namespace BoardNamespace
 {
-    // Žaidimo lenta - ciklinis vienakryptis sąrašas
+
     public class GameBoard
     {
-        private Tile head; // Sąrašo pradžia
-        private int tileCount = 0;
+        private LinkedList<Tile> tiles = new LinkedList<Tile>();
 
         public GameBoard()
         {
-            head = null;
-            tileCount = 0;
+            tiles = new LinkedList<Tile>();
         }
 
         // Pridėti laukelį į sąrašo pabaigą
         public void AddTile(Tile tile)
         {
-            if (head == null)
-            {
-                // Pirmas laukelis
-                head = tile;
-                tile.Next = head; // Ciklas - rodo į save
-            }
-            else
-            {
-                // Randa paskutinį laukelį
-                Tile current = head;
-                while (current.Next != head)
-                {
-                    current = current.Next;
-                }
-
-                // Prijungia naują laukelį
-                current.Next = tile;
-                tile.Next = head; // Uždaro ciklą
-            }
-
-            tileCount++;
+            tiles.AddLast(tile);
+            UpdateCyclicLinks();
         }
 
         // Įterpti laukelį į konkretų poziciją
@@ -50,135 +29,72 @@ namespace BoardNamespace
                 return;
             }
 
-            if (position == 0 || head == null)
+            if (position == 0 || tiles.Count == 0)
             {
-                // Įterpia į pradžią
-                if (head == null)
-                {
-                    head = tile;
-                    tile.Next = head;
-                }
-                else
-                {
-                    // Randa paskutinį
-                    Tile last = head;
-                    while (last.Next != head)
-                    {
-                        last = last.Next;
-                    }
-
-                    tile.Next = head;
-                    head = tile;
-                    last.Next = head; // Paskutinis rodo į naują head
-                }
-                tileCount++;
-                Debug.Log($"✅ Laukelis {tile.Name} įterptas į poziciją {position}");
-                return;
+                tiles.AddFirst(tile);
+            }
+            else if (position >= tiles.Count)
+            {
+                tiles.AddLast(tile);
+            }
+            else
+            {
+                // Randame mazgą pozicijoje
+                LinkedListNode<Tile> node = GetNodeAt(position);
+                tiles.AddBefore(node, tile);
             }
 
-            // Įterpia į vidurį/pabaigą
-            Tile current = head;
-            for (int i = 0; i < position - 1 && current.Next != head; i++)
-            {
-                current = current.Next;
-            }
-
-            tile.Next = current.Next;
-            current.Next = tile;
-            tileCount++;
-
-            Debug.Log($"✅ Laukelis {tile.Name} įterptas į poziciją {position}");
+            UpdateCyclicLinks();
+            Debug.Log($"Laukelis {tile.Name} įterptas į poziciją {position}");
         }
 
         // Ištrinti laukelį pagal poziciją
         public void RemoveTileAt(int position)
         {
-            if (head == null)
+            if (tiles.Count == 0)
             {
                 Debug.LogError("Lenta tuščia!");
                 return;
             }
 
-            if (position < 0 || position >= tileCount)
+            if (position < 0 || position >= tiles.Count)
             {
                 Debug.LogError($"Neteisinga pozicija: {position}");
                 return;
             }
 
-            // Trinti pirmą laukelį
-            if (position == 0)
-            {
-                if (head.Next == head)
-                {
-                    // Vienintelis laukelis
-                    Debug.Log($"🗑️ Ištrintas laukelis: {head.Name}");
-                    head = null;
-                }
-                else
-                {
-                    // Randa paskutinį
-                    Tile last = head;
-                    while (last.Next != head)
-                    {
-                        last = last.Next;
-                    }
+            LinkedListNode<Tile> node = GetNodeAt(position);
+            string name = node.Value.Name;
+            tiles.Remove(node);
 
-                    Tile toRemove = head;
-                    head = head.Next;
-                    last.Next = head;
-                    Debug.Log($"🗑️ Ištrintas laukelis: {toRemove.Name}");
-                }
-                tileCount--;
-                return;
-            }
-
-            // Trinti vidurinio/paskutinio laukelio
-            Tile current = head;
-            for (int i = 0; i < position - 1; i++)
-            {
-                current = current.Next;
-            }
-
-            Tile removed = current.Next;
-            current.Next = removed.Next;
-            tileCount--;
-
-            Debug.Log($"🗑️ Ištrintas laukelis: {removed.Name}");
+            UpdateCyclicLinks();
+            Debug.Log($"Ištrintas laukelis: {name}");
         }
 
         // Ištrinti laukelį pagal pavadinimą (PIRMĄ ATITIKMENĮ)
         public void RemoveTileByName(string name)
         {
-            if (head == null)
+            if (tiles.Count == 0)
             {
                 Debug.LogError("Lenta tuščia!");
                 return;
             }
 
-            // Tikrina pirmą laukelį
-            if (head.Name == name)
-            {
-                RemoveTileAt(0);
-                return;
-            }
-
-            // Ieško sąraše
-            Tile current = head;
-            Tile previous = null;
+            LinkedListNode<Tile> current = tiles.First;
             int position = 0;
 
-            do
+            while (current != null)
             {
-                if (current.Name == name)
+                if (current.Value.Name == name)
                 {
-                    RemoveTileAt(position);
+                    tiles.Remove(current);
+                    UpdateCyclicLinks();
+                    Debug.Log($"Ištrintas laukelis: {name} (pozicija {position})");
                     return;
                 }
-                previous = current;
                 current = current.Next;
                 position++;
             }
-            while (current != head);
 
             Debug.LogWarning($"Laukelis '{name}' nerastas!");
         }
@@ -186,56 +102,86 @@ namespace BoardNamespace
         // Gauti startinį laukelį
         public Tile GetStart()
         {
-            return head;
+            if (tiles.Count == 0) return null;
+            return tiles.First.Value;
         }
 
         // Gauti laukelių skaičių
         public int GetTileCount()
         {
-            return tileCount;
+            return tiles.Count;
         }
 
-        // Rasti kalėjimo laukelį (reikės GoToJail funkcijai)
+        // Rasti kalėjimo laukelį
         public Tile FindJailTile()
         {
-            if (head == null) return null;
+            LinkedListNode<Tile> current = tiles.First;
 
-            Tile current = head;
-            do
+            while (current != null)
             {
-                if (current is JailTile)
+                if (current.Value is JailTile)
                 {
-                    return current;
+                    return current.Value;
                 }
                 current = current.Next;
             }
-            while (current != head);
 
             return null;
+        }
+
+        private LinkedListNode<Tile> GetNodeAt(int position)
+        {
+            LinkedListNode<Tile> current = tiles.First;
+            for (int i = 0; i < position && current != null; i++)
+            {
+                current = current.Next;
+            }
+            return current;
+        }
+
+        private void UpdateCyclicLinks()
+        {
+            if (tiles.Count == 0) return;
+
+            LinkedListNode<Tile> current = tiles.First;
+
+            // Einame per visus mazgus ir nustatome Next rodykles
+            while (current != null)
+            {
+                if (current.Next != null)
+                {
+                    current.Value.Next = current.Next.Value;
+                }
+                else
+                {
+                    current.Value.Next = tiles.First.Value;
+                }
+
+                current = current.Next;
+            }
         }
 
         // Atspausdinti lentą
         public void PrintBoard()
         {
-            if (head == null)
+            if (tiles.Count == 0)
             {
-                Debug.Log("❌ Lenta tuščia!");
+                Debug.Log("Lenta tuščia!");
                 return;
             }
 
             Debug.Log("=== ŽAIDIMO LENTA ===");
-            Tile current = head;
+            LinkedListNode<Tile> current = tiles.First;
             int index = 0;
 
-            do
+            while (current != null)
             {
-                Debug.Log($"[{index}] {current.GetInfo()}");
+                Debug.Log($"[{index}] {current.Value.GetInfo()}");
                 current = current.Next;
                 index++;
             }
-            while (current != head);
 
-            Debug.Log($"Iš viso laukelių: {tileCount}");
+            Debug.Log($"Iš viso laukelių: {tiles.Count}");
             Debug.Log("====================");
         }
     }

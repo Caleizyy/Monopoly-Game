@@ -59,7 +59,7 @@ public class JsonLoader : MonoBehaviour
             }
         }
 
-        Debug.Log($"✅ Žaidimo lenta užkrauta! Laukelių skaičius: {Board.GetTileCount()}");
+        Debug.Log($"Žaidimo lenta užkrauta! Laukelių skaičius: {Board.GetTileCount()}");
         Board.PrintBoard();
     }
 
@@ -130,7 +130,7 @@ public class JsonLoader : MonoBehaviour
         if (tile != null)
         {
             Board.AddTile(tile);
-            Debug.Log($"✅ Sukurtas naujas laukelis: {tile.GetInfo()}");
+            Debug.Log($"Sukurtas naujas laukelis: {tile.GetInfo()}");
         }
     }
 

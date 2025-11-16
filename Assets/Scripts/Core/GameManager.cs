@@ -8,7 +8,7 @@ namespace CoreNamespace
     public class GameManager : MonoBehaviour
     {
         // Nuoroda į JsonLoader
-        public JsonLoader jsonLoader;
+        private JsonLoader jsonLoader;
 
         // Žaidėjai
         public List<Player> PlayersList = new List<Player>();
@@ -41,11 +41,11 @@ namespace CoreNamespace
             Debug.Log("=== MONOPOLIS ===");
             Debug.Log("Spauskite [N] pradėti naują žaidimą");
             Debug.Log("\n📖 ŽAIDIMO TAISYKLĖS:");
-            Debug.Log("  [SPACE] - Mesti kauliuką ir judėti");
-            Debug.Log("  [B] - Pirkti laukelį (PO judėjimo, jei nori)");
-            Debug.Log("  [H] - Pirkti pastatą (PO judėjimo, ant savo gatvės)");
-            Debug.Log("  [D] - Nugriauti pastatą ir atgauti 50% pinigų");
-            Debug.Log("  [SPACE] - Mesti kitą kauliuką (automatiškai kitas žaidėjas)");
+            Debug.Log("  1️⃣ [SPACE] - Mesti kauliuką ir judėti");
+            Debug.Log("  2️⃣ [B] - Pirkti laukelį (PO judėjimo, jei nori)");
+            Debug.Log("  3️⃣ [H] - Pirkti pastatą (PO judėjimo, ant savo gatvės)");
+            Debug.Log("  4️⃣ [D] - Nugriauti pastatą ir atgauti 50% pinigų");
+            Debug.Log("  5️⃣ [SPACE] - Mesti kitą kauliuką (automatiškai kitas žaidėjas)");
             Debug.Log("\n  [P] - Atspausdinti lentą");
             Debug.Log("  [Q] - Nutraukti žaidimą");
         }
@@ -104,11 +104,10 @@ namespace CoreNamespace
             for (int i = 0; i < playerCount; i++)
             {
                 Player p = new Player(playerNames[i], startingMoney);
-                p.Position = jsonLoader.Board.GetStart(); // Startas
+                p.Position = jsonLoader.Board.GetStart();
                 PlayersList.Add(p);
                 PlayerQueue.Enqueue(p);
             }
-
             currentPlayer = PlayerQueue.Dequeue();
             hasRolled = false;
             gameStarted = true;
@@ -123,7 +122,6 @@ namespace CoreNamespace
         // Mesti kauliuką
         void RollDice()
         {
-            // Jei jau metė kauliuką - baigia ejima
             if (hasRolled)
             {
                 Debug.Log($"⏭️  {currentPlayer.Name} baigia ėjimą. Kitas žaidėjas...\n");
@@ -151,16 +149,9 @@ namespace CoreNamespace
             lastDiceRoll = Random.Range(1, 7);
             Debug.Log($"\n🎲 {currentPlayer.Name} išmetė: {lastDiceRoll}");
             hasRolled = true;
-
-            // Judame
             currentPlayer.Move(lastDiceRoll);
-
-            // Patikriname pergalės sąlygą
             CheckWinCondition();
-
             PrintGameStatus();
-
-            // Leidžiame pirkti/statyti/griauti, arba baigti ejima jei nenori
             Debug.Log("\n💡 Gali pirkti [B], statyti [H], griauti [D], arba spausk [SPACE] baigti ėjimą");
         }
 
@@ -231,7 +222,7 @@ namespace CoreNamespace
 
             if (currentPlayer.Position is StreetTile street)
             {
-                int buildingCost = street.Price / 2; // Pastato kaina = pusė laukelio kainos
+                int buildingCost = street.Price / 2;
                 currentPlayer.BuyBuilding(street, buildingCost);
                 PrintGameStatus();
             }
@@ -263,9 +254,9 @@ namespace CoreNamespace
                     return;
                 }
 
-                // Nugriauti viršutinį pastatą
+                // Nugriauti viršutinį pastatą (LIFO - paskutinis įdėtas, pirmas išimtas)
                 int buildingRent = street.Buildings.Pop();
-                int refund = (street.Price / 2) / 2; // Grąžina 50% pastato kainos
+                int refund = (street.Price / 2) / 2; // Grąžiname 50% pastato kainos
                 currentPlayer.Money += refund;
 
                 Debug.Log($"🔨 {currentPlayer.Name} nugriovė pastatą ant {street.Name}");
@@ -283,10 +274,10 @@ namespace CoreNamespace
         // Kitas ėjimas
         void NextTurn()
         {
-            // Grąžina dabartinį žaidėją į eilę
+            // Grąžiname dabartinį žaidėją į eilę
             PlayerQueue.Enqueue(currentPlayer);
 
-            // Ima kitą žaidėją
+            // Imame kitą žaidėją
             currentPlayer = PlayerQueue.Dequeue();
             hasRolled = false; // Naujas ėjimas - gali mesti kauliuką
 
@@ -327,6 +318,7 @@ namespace CoreNamespace
                 }
                 else
                 {
+                    // Nebandome Enqueue bankrutavusio
                     currentPlayer = PlayerQueue.Dequeue();
                     hasRolled = false;
                     Debug.Log($"\n--- {currentPlayer.Name} ĖJIMAS ---");
